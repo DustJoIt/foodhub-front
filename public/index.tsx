@@ -4,7 +4,9 @@ import * as ReactDOM from "react-dom";
 import { Provider } from "react-redux";
 
 import { HelloWorld } from "../src/components/HelloWorld/HelloWorld";
-import { store } from "../src/reducers/";
+import { configureStore } from "../src/reducers/";
+
+const store = configureStore()
 
 export function Home() {
     return (

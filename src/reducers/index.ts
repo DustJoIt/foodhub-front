@@ -1,7 +1,9 @@
-import { combineReducers, createStore } from "redux";
+import { combineReducers, createStore, applyMiddleware, compose } from "redux";
 import { BasicActions, BASIC_SETUP } from "../actions";
+import { createEpicMiddleware } from "redux-observable";
+import { rootEpic } from "../epics";
 
-export interface stateTyping {
+export interface StateTyping {
     greeting: string;
 }
 
@@ -25,8 +27,22 @@ export const basicActionSetupReducer = (
 
 export const rootState = combineReducers({ greeting: basicActionSetupReducer });
 
-export const store = createStore(
-    rootState,
-    (window as any).__REDUX_DEVTOOLS_EXTENSION__ &&
-        (window as any).__REDUX_DEVTOOLS_EXTENSION__()
-);
+const epicMiddleware = createEpicMiddleware<
+    BasicActions,
+    BasicActions,
+    StateTyping
+>();
+
+const composeEnhancers =
+    (window as any).__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
+
+export function configureStore() {
+    const store = createStore(
+        rootState,
+        composeEnhancers(applyMiddleware(epicMiddleware))
+    );
+
+    epicMiddleware.run(rootEpic);
+
+    return store;
+}

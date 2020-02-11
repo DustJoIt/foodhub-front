@@ -2,13 +2,13 @@ import * as React from "react";
 import { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 
-import { stateTyping } from "../../reducers";
+import { StateTyping } from "../../reducers";
 import "./HelloWorld.css";
 import { basicSetupAction } from "../../actions";
 
 export function HelloWorld() {
     const [count, setCount] = useState(0);
-    const greeting = useSelector((state: stateTyping) => state.greeting);
+    const greeting = useSelector((state: StateTyping) => state.greeting);
     const dispatch = useDispatch();
 
     return (
