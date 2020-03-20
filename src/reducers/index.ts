@@ -1,35 +1,99 @@
+import { produce } from "immer";
+
 import { combineReducers, createStore, applyMiddleware, compose } from "redux";
-import { BasicActions, BASIC_SETUP } from "../actions";
+import { connectRouter, routerMiddleware } from "connected-react-router";
+import { createBrowserHistory } from "history";
+import { LOGIN_ATTEMPT, LOGIN_FAILURE, LOGIN_SUCCESS, Actions, SET_USERS, LOGOUT } from "../actions";
 import { createEpicMiddleware } from "redux-observable";
 import { rootEpic } from "../epics";
+import { UserItem } from "../util/mapJson";
 
-export interface StateTyping {
-    greeting: string;
+export enum LoginStatus {
+    NOT_LOADED = "NOT_LOADED",
+    LOADING = "LOADING",
+    LOADED = "LOADED",
+    FAILURE = "FAILURE"
 }
 
-const initialState = {
-    greeting: "Guten Tag"
-};
+export interface AuthStateWAITING {
+    status: LoginStatus.LOADING | LoginStatus.NOT_LOADED
+}
 
-export const basicActionSetupReducer = (
-    store: string = "Guten Tag",
-    action: BasicActions
+export interface AuthStateFAILURE {
+    status: LoginStatus.FAILURE,
+    error: string
+}
+
+export interface AuthStateDONE {
+    status: LoginStatus.LOADED,
+    name: string
+}
+
+export const defaultAuthState: AuthStateWAITING = {
+    status : LoginStatus.NOT_LOADED
+}
+
+export type AuthState = AuthStateWAITING | AuthStateDONE | AuthStateFAILURE; 
+
+export interface StateTyping {
+    authInfo: AuthState,
+    userItems: UserItem[] 
+}
+
+export const authReducer = (
+    state: AuthState = defaultAuthState,
+    action: Actions
 ) => {
-    console.log(action.type);
     switch (action.type) {
-        case BASIC_SETUP:
-            return action.hello;
-
+        case LOGIN_ATTEMPT:
+            return produce(state, draft => {
+                draft.status = LoginStatus.LOADING;
+            });
+        case LOGIN_FAILURE:
+            return produce(state, draft => {
+                draft.status = LoginStatus.FAILURE;
+                (draft as AuthStateFAILURE).error = action.message;
+            });
+        case LOGIN_SUCCESS:
+            return produce(state, draft => {
+                draft.status = LoginStatus.LOADED;
+                (draft as AuthStateDONE).name = action.username;
+            });
+        case LOGOUT:
+            return produce(state, () => {
+                return defaultAuthState;
+            });
         default:
-            return store;
+            return state;
     }
 };
 
-export const rootState = combineReducers({ greeting: basicActionSetupReducer });
+export const userItemsReducer = (
+    state: UserItem[] = [],
+    action: Actions
+) => {
+    switch (action.type) {
+        case SET_USERS:
+            return produce(state, draft => {
+                return action.items; 
+            });
+        default:
+            return state;
+    }
+};
+
+export const rootState = history =>
+    combineReducers({
+        authInfo: authReducer,
+        userItems: userItemsReducer,
+        router: connectRouter(history)
+    });
+
+export const history = createBrowserHistory();
 
 const epicMiddleware = createEpicMiddleware<
-    BasicActions,
-    BasicActions,
+    Actions,
+    Actions,
     StateTyping
 >();
 
@@ -38,8 +102,10 @@ const composeEnhancers =
 
 export function configureStore() {
     const store = createStore(
-        rootState,
-        composeEnhancers(applyMiddleware(epicMiddleware))
+        rootState(history),
+        composeEnhancers(
+            applyMiddleware(epicMiddleware, routerMiddleware(history))
+        )
     );
 
     epicMiddleware.run(rootEpic);

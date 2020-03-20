@@ -1,21 +1,23 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom";
 
+import { ConnectedRouter } from "connected-react-router";
 import { Provider } from "react-redux";
 
-import { HelloWorld } from "../src/components/HelloWorld/HelloWorld";
-import { configureStore } from "../src/reducers/";
+import { configureStore, history } from "../src/reducers/";
+import { Routes } from "../src/router";
 
-const store = configureStore()
+const store = configureStore();
 
-export function Home() {
+export function App() {
     return (
         <Provider store={store}>
-            <HelloWorld />
+            <ConnectedRouter history={history}>
+                <Routes />
+            </ConnectedRouter>
         </Provider>
-        // Починить нормально
     );
 }
 
 var mountNode = document.getElementById("app");
-ReactDOM.render(<Home />, mountNode);
+ReactDOM.render(<App />, mountNode);
